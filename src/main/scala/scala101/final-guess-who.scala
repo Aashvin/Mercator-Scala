@@ -39,19 +39,15 @@ class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColo
     }
 
     def removeCharacterByName(name: CharacterString): Int = {
-        if(name.value.isEmpty) {
-            return 2
-        }
+//        if(name.value.isEmpty) {
+//            return 2
+//        }
 
         val coords = this.findCharacterByName(name)
 
-        if(coords == (-1, -1)) {
-            return 2
-        }
+        if(coords == (-1, -1)) return 2
 
-        if(!this.state(coords._1)(coords._2).inGame) {
-            return 1
-        }
+        if(!this.state(coords._1)(coords._2).inGame) return 1
 
         this.state(coords._1)(coords._2).inGame = false
         0
@@ -64,7 +60,7 @@ class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColo
             case "glasses" => character.hasGlasses
         }
 
-        // Remove the correct character from the game based on whether the guess was correct or not
+        // Remove the character from the game based on whether the guess was correct or not
         val comparison = (characterTrait: CharacterTraitDataType, guess: CharacterTraitDataType) =>
             if (equality) {characterTrait.value == guess.value} else {characterTrait.value != guess.value}
         if (comparison(characterTrait, guess) && character.inGame) {character.inGame = !character.inGame}
@@ -96,11 +92,12 @@ class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColo
         if (glasses.value == chosenCharacter.hasGlasses.value) 0 else 1
     }
 
+    // Print the board state
     def show(): Unit = {
         print("\n\n\n")
         print(this.state.map(_.map(e =>
             if(e.inGame) {
-                e.hasGlasses.value
+                e.name.value
             } else {
                 " " * e.name.value.length
             }).mkString("     ")).mkString("\n"))
@@ -109,8 +106,11 @@ class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColo
 }
 
 class Game(rows: Int, columns: Int) {
+    // Available pool of colours to choose from for each relevant character trait
     private val hairColours: Array[String] = Array("Black", "Brunette", "Blonde", "Ginger", "White", "Blue", "Pink")
     private val eyeColours: Array[String] = Array("Black", "Brown", "Hazel", "Green", "Grey", "Blue")
+
+    // Create new board and choose a random character
     private val board: Board = new Board(rows, columns, hairColours, eyeColours)
     private val chosenCharacter: Character = board.state(Random.nextInt(board.rows))(Random.nextInt(board.columns))
     private var numGuesses: Int = 0
@@ -136,13 +136,11 @@ class Game(rows: Int, columns: Int) {
         val guess = CharacterString(scala.io.StdIn.readLine())
         val removeCharacterResult = board.removeCharacterByName(guess)
 
-        if (removeCharacterResult != 2) {
-            if (removeCharacterResult == 1) {
-                println("You've used another guess on a character that has already been guessed!")
-            }
-        } else {
-            println("This character does not exist in this game!")
-        }
+        println(removeCharacterResult match {
+            case 0 => if (guess.value == chosenCharacter.name.value) "You got the right character!" else "You got the wrong character!"
+            case 1 => s"${guess.value} has already been guessed!"
+            case 2 => s"${guess.value} doesn't exist in the game!"
+        })
     }
 
     private def guessByColourTrait(characteristic: String): Unit = {
@@ -176,23 +174,17 @@ class Game(rows: Int, columns: Int) {
     }
 
     def play(): Unit = {
-        var guessType: Int = 0
-
         println(chosenCharacter.hasGlasses.value)
         while(board.state.flatten.count(_.inGame) > 0 && chosenCharacter.inGame) {
             board.show()
 
             println("Number of guesses: " + numGuesses + "\n")
 
-            guessType = this.getGuessType
-            if(guessType == 1) {
-                this.guessByName()
-            } else if(guessType == 2) {
-                this.guessByColourTrait("hair")
-            } else if (guessType == 3) {
-                this.guessByColourTrait("eye")
-            } else if (guessType == 4) {
-                this.guessByGlasses()
+            this.getGuessType match {
+                case 1 => this.guessByName()
+                case 2 => this.guessByColourTrait("hair")
+                case 3 => this.guessByColourTrait("eye")
+                case 4 => this.guessByGlasses()
             }
             numGuesses += 1
         }
