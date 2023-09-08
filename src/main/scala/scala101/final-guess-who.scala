@@ -21,7 +21,7 @@ class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColo
 
     // Populate the board with random characters
     this.state = this.state.map(_.map(_ => new Character(
-        CharacterString((Random.alphanumeric take 10).mkString),
+        CharacterString((Random.alphanumeric take 10).mkString.toLowerCase().capitalize),
         CharacterString(hairColours(Random.nextInt(hairColours.length))),
         CharacterBoolean(Random.nextBoolean()),
         CharacterString(eyeColours(Random.nextInt(eyeColours.length)))
@@ -39,17 +39,13 @@ class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColo
     }
 
     def removeCharacterByName(name: CharacterString): Int = {
-//        if(name.value.isEmpty) {
-//            return 2
-//        }
+        val coordinates = this.findCharacterByName(name)
 
-        val coords = this.findCharacterByName(name)
+        if(coordinates == (-1, -1)) return 2
 
-        if(coords == (-1, -1)) return 2
+        if(!this.state(coordinates._1)(coordinates._2).inGame) return 1
 
-        if(!this.state(coords._1)(coords._2).inGame) return 1
-
-        this.state(coords._1)(coords._2).inGame = false
+        this.state(coordinates._1)(coordinates._2).inGame = false
         0
     }
 
@@ -63,6 +59,7 @@ class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColo
         // Remove the character from the game based on whether the guess was correct or not
         val comparison = (characterTrait: CharacterTraitDataType, guess: CharacterTraitDataType) =>
             if (equality) {characterTrait.value == guess.value} else {characterTrait.value != guess.value}
+
         if (comparison(characterTrait, guess) && character.inGame) {character.inGame = !character.inGame}
 
         character
@@ -92,14 +89,24 @@ class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColo
         if (glasses.value == chosenCharacter.hasGlasses.value) 0 else 1
     }
 
+    private def getCharacteristic(character: Character, characteristic: String): String = {
+        val value = characteristic match {
+            case "name" => character.name.value
+            case "hair" => character.hairColour.value
+            case "eye" => character.eyeColour.value
+            case "glasses" => character.hasGlasses.value
+        }
+        value.toString
+    }
+
     // Print the board state
-    def show(): Unit = {
+    def show(characteristic: String): Unit = {
         print("\n\n\n")
         print(this.state.map(_.map(e =>
             if(e.inGame) {
-                e.name.value
+                getCharacteristic(e, characteristic) + " " * (10 - getCharacteristic(e, characteristic).length)
             } else {
-                " " * e.name.value.length
+                Console.RED + getCharacteristic(e, characteristic) + " " * (10 - getCharacteristic(e, characteristic).length) + Console.RESET
             }).mkString("     ")).mkString("\n"))
         println()
     }
@@ -121,19 +128,18 @@ class Game(rows: Int, columns: Int) {
             println("1. Guess by name\n2. Guess by hair colour\n3. Guess by eye colour\n4. Guess by glasses presence")
             print("Please enter the number corresponding to the option: ")
 
-            try {
-                guessType = scala.io.StdIn.readLine().toInt
-            } catch {
+            try guessType = scala.io.StdIn.readLine().toInt
+            catch {
                 case _: NumberFormatException => println("That was not a number!")
             }
-
         }
         guessType
     }
 
     private def guessByName(): Unit = {
+        board.show("name")
         print("Please enter a name to guess: ")
-        val guess = CharacterString(scala.io.StdIn.readLine())
+        val guess = CharacterString(scala.io.StdIn.readLine().toLowerCase().capitalize)
         val removeCharacterResult = board.removeCharacterByName(guess)
 
         println(removeCharacterResult match {
@@ -144,40 +150,44 @@ class Game(rows: Int, columns: Int) {
     }
 
     private def guessByColourTrait(characteristic: String): Unit = {
-        val coloursList: Array[String] = characteristic match {
-            case "hair" => hairColours
-            case "eye" => eyeColours
-        }
-        println(s"Please enter a $characteristic colour out of: " + coloursList.mkString(", "))
-        val guess = CharacterString(scala.io.StdIn.readLine())
+        board.show(characteristic)
+
+        // Get the correct characteristic
+        print(s"Please enter a $characteristic colour: ")
+        val guess = CharacterString(scala.io.StdIn.readLine().toLowerCase().capitalize)
 
         val removeCharacterResult: Int = characteristic match {
             case "hair" => board.removeCharacterByHairColour(chosenCharacter, guess)
             case "eye" => board.removeCharacterByEyeColour(chosenCharacter, guess)
         }
-        if (removeCharacterResult == 0) {
-            println(s"You guessed the correct $characteristic colour!")
-        } else if (removeCharacterResult == 1) {
-            println(s"The character does not have that $characteristic colour.")
-        }
+
+        println(removeCharacterResult match {
+            case 0 => s"${guess.value.toLowerCase().capitalize} is the correct $characteristic colour!"
+            case 1 => s"The character does not have the ${guess.value.toLowerCase()} $characteristic colour."
+        })
     }
 
     private def guessByGlasses(): Unit = {
+        board.show("glasses")
+
         print("1. Has glasses\n2. Does not have glasses\nPlease enter the number corresponding to your choice: ")
         val guess = scala.io.StdIn.readLine()
         val removeCharacterResult = board.removeCharacterByGlasses(chosenCharacter, CharacterBoolean(guess == "1"))
-        if (removeCharacterResult == 0) {
-            println("You guessed correctly - the character " + (if (guess == "1") "has" else "does not have") + " glasses")
-        } else if (removeCharacterResult == 1)  {
-            println("You guessed incorrectly - the character " + (if (guess == "1") "does not have" else "has") + " glasses")
-        }
+
+        println(removeCharacterResult match {
+            case 0 => "You guessed correctly - the character " + (if (guess == "1") "has" else "does not have") + " glasses"
+            case 1 => "You guessed incorrectly - the character " + (if (guess == "1") "does not have" else "has") + " glasses"
+        })
     }
 
     def play(): Unit = {
-        println(chosenCharacter.hasGlasses.value)
-        while(board.state.flatten.count(_.inGame) > 0 && chosenCharacter.inGame) {
-            board.show()
+        println("You're playing Guess Who! Make guesses based on criteria to figure out the chosen character.")
+        println("Characters in red have been confirmed to no longer be in the game, although you can still guess them if you so wish.")
+        println("Guess the name of the chosen character to win.")
+//        println(chosenCharacter.name.value)
 
+        while(board.state.flatten.count(_.inGame) > 0 && chosenCharacter.inGame) {
+            board.show("name")
             println("Number of guesses: " + numGuesses + "\n")
 
             this.getGuessType match {
