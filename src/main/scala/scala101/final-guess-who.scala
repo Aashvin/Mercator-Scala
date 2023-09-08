@@ -2,9 +2,10 @@ package scala101
 
 import scala.util.Random
 
-abstract class CharacterTraitDataType(val s: Any)
-final case class CharacterString(override val s: String) extends CharacterTraitDataType
-final case class CharacterBoolean(override val s: Boolean) extends CharacterTraitDataType
+// Custom classes help with reusable functions
+abstract class CharacterTraitDataType(val value: Any)
+final case class CharacterString(override val value: String) extends CharacterTraitDataType
+final case class CharacterBoolean(override val value: Boolean) extends CharacterTraitDataType
 
 class Character(
                val name: CharacterString,
@@ -16,8 +17,9 @@ class Character(
 }
 
 class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColours: Array[String]) {
-    var state: Array[Array[Character]] = Array.ofDim[Character](rows, columns)
+    var state: Array[Array[Character]] = Array.ofDim[Character](rows, columns)      // The state of the board
 
+    // Populate the board with random characters
     this.state = this.state.map(_.map(_ => new Character(
         CharacterString((Random.alphanumeric take 10).mkString),
         CharacterString(hairColours(Random.nextInt(hairColours.length))),
@@ -25,18 +27,19 @@ class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColo
         CharacterString(eyeColours(Random.nextInt(eyeColours.length)))
     )))
 
+    // Get board position of a character by name
     private def findCharacterByName(name: CharacterString): (Int, Int) = {
         for {
             i <- this.state.indices
             j <- this.state(0).indices
-            if this.state(i)(j).name.s == name.s
+            if this.state(i)(j).name.value == name.value
         } return (i, j)
 
         (-1, -1)
     }
 
     def removeCharacterByName(name: CharacterString): Int = {
-        if(name.s.isEmpty) {
+        if(name.value.isEmpty) {
             return 2
         }
 
@@ -60,8 +63,10 @@ class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColo
             case "eye" => character.eyeColour
             case "glasses" => character.hasGlasses
         }
-        val comparison = (characterTrait: CharacterTraitDataType, guess: CharacterTraitDataType) => if (equality) {characterTrait.s == guess.s} else {characterTrait.s != guess.s}
 
+        // Remove the correct character from the game based on whether the guess was correct or not
+        val comparison = (characterTrait: CharacterTraitDataType, guess: CharacterTraitDataType) =>
+            if (equality) {characterTrait.value == guess.value} else {characterTrait.value != guess.value}
         if (comparison(characterTrait, guess) && character.inGame) {character.inGame = !character.inGame}
 
         character
@@ -69,35 +74,35 @@ class Board(val rows: Int, val columns: Int, hairColours: Array[String], eyeColo
 
     def removeCharacterByHairColour(chosenCharacter: Character, hairColour: CharacterString): Int = {
         this.state = this.state.map(_.map(e =>
-            removeCharacterByTrait(e, "hair", hairColour, equality = !(hairColour.s == chosenCharacter.hairColour.s))
+            removeCharacterByTrait(e, "hair", hairColour, equality = !(hairColour.value == chosenCharacter.hairColour.value))
         ))
 
-        if (hairColour.s == chosenCharacter.hairColour.s) 0 else 1
+        if (hairColour.value == chosenCharacter.hairColour.value) 0 else 1
     }
 
     def removeCharacterByEyeColour(chosenCharacter: Character, eyeColour: CharacterString): Int = {
         this.state = this.state.map(_.map(e =>
-            removeCharacterByTrait(e, "eye", eyeColour, equality = !(eyeColour.s == chosenCharacter.eyeColour.s))
+            removeCharacterByTrait(e, "eye", eyeColour, equality = !(eyeColour.value == chosenCharacter.eyeColour.value))
         ))
 
-        if (eyeColour.s == chosenCharacter.eyeColour.s) 0 else 1
+        if (eyeColour.value == chosenCharacter.eyeColour.value) 0 else 1
     }
 
     def removeCharacterByGlasses(chosenCharacter: Character, glasses: CharacterBoolean): Int = {
         this.state = this.state.map(_.map(e =>
-            removeCharacterByTrait(e, "glasses", glasses, equality = !(glasses.s == chosenCharacter.hasGlasses.s))
+            removeCharacterByTrait(e, "glasses", glasses, equality = !(glasses.value == chosenCharacter.hasGlasses.value))
         ))
 
-        if (glasses.s == chosenCharacter.hasGlasses.s) 0 else 1
+        if (glasses.value == chosenCharacter.hasGlasses.value) 0 else 1
     }
 
     def show(): Unit = {
         print("\n\n\n")
         print(this.state.map(_.map(e =>
             if(e.inGame) {
-                e.hasGlasses.s
+                e.hasGlasses.value
             } else {
-                " " * e.name.s.length
+                " " * e.name.value.length
             }).mkString("     ")).mkString("\n"))
         println()
     }
@@ -173,7 +178,7 @@ class Game(rows: Int, columns: Int) {
     def play(): Unit = {
         var guessType: Int = 0
 
-        println(chosenCharacter.hasGlasses.s)
+        println(chosenCharacter.hasGlasses.value)
         while(board.state.flatten.count(_.inGame) > 0 && chosenCharacter.inGame) {
             board.show()
 
@@ -191,7 +196,7 @@ class Game(rows: Int, columns: Int) {
             }
             numGuesses += 1
         }
-        println("You managed to guess " + chosenCharacter.name.s +" in " + numGuesses + " guesses!")
+        println("You managed to guess " + chosenCharacter.name.value +" in " + numGuesses + " guesses!")
     }
 }
 
