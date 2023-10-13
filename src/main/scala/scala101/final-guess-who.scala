@@ -139,7 +139,7 @@ class Game(rows: Int, columns: Int) {
     private def guessByName(): Unit = {
         board.show("name")
         print("Please enter a name to guess: ")
-        val guess = CharacterString(scala.io.StdIn.readLine().toLowerCase().capitalize)
+        val guess = CharacterString(scala.io.StdIn.readLine().trim().toLowerCase().capitalize)
         val removeCharacterResult = board.removeCharacterByName(guess)
 
         println(removeCharacterResult match {

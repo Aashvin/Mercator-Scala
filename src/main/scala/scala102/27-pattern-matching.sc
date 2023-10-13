@@ -13,7 +13,7 @@ print(benAndJerrysFlavour)
 val pizzaMeasurement: Int = 7
 
 val pizzaSize: String = pizzaMeasurement match {
-    case 7 => "Persoanl"
+    case 7 => "Personal"
     case 9 => "Small"
     case 11 => "Medium"
     case 14 => "Large"
